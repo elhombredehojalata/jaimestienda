@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stock Planet Movil</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .scroll-hint::after {
+      content: "↔ Desliza horizontalmente para ver más columnas";
+      display: block;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .google-visualization-table-table {
+      width: 100%;
+      font-size: 1.3rem;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      border-collapse: collapse !important;
+      border: 1px solid #d1d5db !important;
+    }
+
+    .google-visualization-table-th {
+      background-color: #f3f4f6 !important;
+      color: #111827 !important;
+      font-weight: 600;
+      text-align: center !important;
+      padding: 12px !important;
+      border: 1px solid #d1d5db !important;
+    }
+
+    .google-visualization-table-td {
+      background-color: #ffffff !important;
+      padding: 12px !important;
+      color: #1f2937 !important;
+      border: 1px solid #e5e7eb !important;
+    }
+
+    tr.google-visualization-table-tr:hover td {
+      background-color: #f9fafb !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-5xl font-extrabold text-center mb-3 text-blue-700">📦 STOCK PLANET MOVIL</h1>
+
+    <!-- Botón VER VENTAS vistoso -->
+    <div class="flex justify-end mb-6">
+      <a href="ventas.html">
+        <button class="bg-green-600 hover:bg-green-700 text-white text-lg font-bold px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
+          📋 VER VENTAS ➡️
+        </button>
+      </a>
+    </div>
+
+    <!-- Buscador y checkbox -->
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <input id="searchBox" type="text" placeholder="🔍 Hola Jaime, ¿qué deseas buscar?"
+             class="w-full sm:w-2/3 px-5 py-4 rounded-md border border-gray-300 shadow-md text-base focus:outline-none focus:ring-2 focus:ring-blue-600"/>
+
+      <label class="flex items-center gap-3 text-xl font-semibold">
+        <input type="checkbox" id="showAll" class="w-6 h-6" />
+        Mostrar todos los equipos registrados (vendidos y traspasados)
+      </label>
+    </div>
+
+    <!-- Mensaje de deslizar -->
+    <div class="scroll-hint mb-3 text-center"></div>
+
+    <div id="table_div" class="bg-white p-5 rounded-lg shadow-lg overflow-x-auto"></div>
+  </div>
+
+  <script>
+    google.charts.load('current', {'packages':['table']});
+    google.charts.setOnLoadCallback(drawTable);
+
+    let fullData;
+    let visibleIndexes = [];
+
+    function drawTable() {
+      const sheetID = '1kV8SfB2oEDvOjksH1tGwsBeXGz65HjsnUX0LoR11ZjU';
+      const gid = '1483762769';
+      const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?gid=${gid}`);
+      query.send(function(response) {
+        if (response.isError()) {
+          document.getElementById("table_div").innerHTML = "<p class='text-red-600 text-xl'>Error cargando datos.</p>";
+          return;
+        }
+
+        fullData = response.getDataTable();
+
+        // Determinar columnas visibles (excluir A, L, M, N y "comentario adicional")
+        visibleIndexes = [];
+        for (let i = 0; i < fullData.getNumberOfColumns(); i++) {
+          const label = fullData.getColumnLabel(i).trim().toLowerCase();
+          if ([0, 11, 12, 13].includes(i) || label.includes("comentario adicional")) continue;
+          visibleIndexes.push(i);
+        }
+
+        renderFilteredTable();
+
+        document.getElementById("searchBox").addEventListener("input", renderFilteredTable);
+        document.getElementById("showAll").addEventListener("change", renderFilteredTable);
+      });
+    }
+
+    function renderFilteredTable() {
+      const searchTerm = document.getElementById("searchBox").value.toLowerCase();
+      const showAll = document.getElementById("showAll").checked;
+
+      const filtered = new google.visualization.DataTable();
+
+      for (let i of visibleIndexes) {
+        filtered.addColumn(fullData.getColumnType(i), fullData.getColumnLabel(i));
+      }
+
+      for (let
